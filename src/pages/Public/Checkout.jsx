@@ -1,67 +1,87 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { CreditCard, Tag, ShieldCheck } from 'lucide-react';
 
 export default function Checkout() {
-  const navigate = useNavigate();
-  const [coupon, setCoupon] = useState('');
-  const [discount, setDiscount] = useState(0);
-
-  const applyCoupon = (e) => {
-    e.preventDefault();
-    if (coupon === 'DISCOUNT50') {
-      setDiscount(50000);
-      alert('Coupon applied!');
-    } else {
-      alert('Invalid coupon');
-    }
-  };
-
   const handleCheckout = (e) => {
     e.preventDefault();
-    alert('Mock Midtrans popup would appear here. Redirecting to success page.');
-    navigate('/order/mock-secure-token');
+    alert('Mock: Processing payment');
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100">
-      <h1 className="text-2xl font-bold mb-6">Checkout</h1>
+    <div className="max-w-4xl mx-auto px-6 py-12">
+      <h1 className="text-3xl font-bold mb-8">Secure Checkout</h1>
       
-      <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-        <h3 className="font-semibold mb-2">Order Summary</h3>
-        <div className="flex justify-between mb-1">
-          <span className="text-slate-600">Subtotal</span>
-          <span>Rp 500.000</span>
-        </div>
-        {discount > 0 && (
-          <div className="flex justify-between mb-1 text-green-600">
-            <span>Discount</span>
-            <span>- Rp {discount.toLocaleString('id-ID')}</span>
+      <div className="grid md:grid-cols-2 gap-8">
+        <div>
+          <div className="glass-card rounded-2xl p-6 border border-white/10 mb-6">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <ShieldCheck className="text-emerald-400" /> Billing Information
+            </h2>
+            <form id="checkoutForm" onSubmit={handleCheckout} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+                <input type="text" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
+                <input type="email" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">WhatsApp Number (For License Delivery)</label>
+                <input type="text" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" />
+              </div>
+            </form>
           </div>
-        )}
-        <div className="flex justify-between mt-3 pt-3 border-t border-slate-200 font-bold text-lg">
-          <span>Total</span>
-          <span>Rp {(500000 - discount).toLocaleString('id-ID')}</span>
+        </div>
+
+        <div>
+          <div className="glass-card rounded-2xl p-6 border border-white/10 sticky top-24">
+            <h2 className="text-xl font-semibold mb-6 border-b border-white/5 pb-4">Order Summary</h2>
+            
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="font-bold text-white">VPN Premium</h3>
+                <p className="text-sm text-slate-400 mt-1">Monthly Subscription</p>
+              </div>
+              <span className="font-bold">Rp 50.000</span>
+            </div>
+            
+            <div className="mb-6 pt-4 border-t border-white/5">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input type="text" placeholder="Promo code" className="w-full bg-slate-900/50 border border-white/10 text-white pl-9 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm uppercase" />
+                </div>
+                <button type="button" className="bg-slate-800 text-slate-200 px-4 py-2 rounded-lg font-medium hover:bg-slate-700 transition-colors border border-white/5 text-sm">
+                  Apply
+                </button>
+              </div>
+            </div>
+            
+            <div className="space-y-3 pt-4 border-t border-white/5 mb-6 text-sm">
+              <div className="flex justify-between text-slate-400">
+                <span>Subtotal</span>
+                <span>Rp 50.000</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Discount</span>
+                <span>Rp 0</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold text-white pt-2">
+                <span>Total Amount</span>
+                <span className="text-blue-400">Rp 50.000</span>
+              </div>
+            </div>
+            
+            <button form="checkoutForm" type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2">
+              <CreditCard size={18} /> Pay Securely with Midtrans
+            </button>
+            <p className="text-center text-xs text-slate-500 mt-4 flex items-center justify-center gap-1">
+              <ShieldCheck size={14} /> End-to-end encrypted transaction
+            </p>
+          </div>
         </div>
       </div>
-
-      <form onSubmit={applyCoupon} className="flex gap-2 mb-6">
-        <input type="text" placeholder="Enter coupon code" value={coupon} onChange={e => setCoupon(e.target.value)} className="flex-1 px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary" />
-        <button type="submit" className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg font-medium transition">Apply</button>
-      </form>
-
-      <form onSubmit={handleCheckout} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-          <input type="text" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-primary outline-none" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-          <input type="email" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-primary outline-none" />
-        </div>
-        <button type="submit" className="w-full mt-6 bg-gradient-to-r from-primary to-accent text-white py-3 rounded-lg font-semibold shadow-lg hover:opacity-90 transition">
-          Pay with Midtrans
-        </button>
-      </form>
     </div>
   );
 }

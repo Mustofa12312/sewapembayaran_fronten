@@ -1,64 +1,100 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { UserPlus, ShieldAlert, Trash2 } from 'lucide-react';
 
 export default function AdminStaff() {
   const [staff, setStaff] = useState([
-    { id: 1, name: 'Super Admin', email: 'admin@example.com', role: 'super_admin' },
-    { id: 2, name: 'Support Staff', email: 'support@example.com', role: 'staff' },
+    { id: 1, name: 'Super Admin', email: 'admin@midrash.com', role: 'super_admin' },
+    { id: 2, name: 'Staff Support', email: 'staff@midrash.com', role: 'staff' }
   ]);
 
-  const handleAddStaff = (e) => {
+  const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '' });
+
+  const handleCreate = (e) => {
     e.preventDefault();
-    alert('Mock: Add new staff logic here.');
+    alert('Mock: Create staff');
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Staff Management</h1>
-      </div>
-      
-      <div className="bg-white p-6 rounded shadow border-t-4 border-slate-900 mb-8">
-        <h2 className="text-lg font-semibold mb-4">Add New Staff (Super Admin Only)</h2>
-        <form onSubmit={handleAddStaff} className="flex gap-4">
-          <input type="text" placeholder="Name" required className="px-4 py-2 border border-slate-300 rounded" />
-          <input type="email" placeholder="Email" required className="px-4 py-2 border border-slate-300 rounded" />
-          <input type="password" placeholder="Password" required className="px-4 py-2 border border-slate-300 rounded" />
-          <select className="px-4 py-2 border border-slate-300 rounded">
-            <option value="staff">Staff</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button type="submit" className="bg-slate-900 text-white px-4 py-2 rounded font-semibold hover:bg-slate-800">Add</button>
-        </form>
+    <div className="max-w-6xl mx-auto">
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Staff Management</h1>
+          <p className="text-slate-400">Manage administrator accounts and permissions.</p>
+        </div>
       </div>
 
-      <div className="bg-white rounded shadow overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="py-3 px-4 font-semibold text-slate-600">Name</th>
-              <th className="py-3 px-4 font-semibold text-slate-600">Email</th>
-              <th className="py-3 px-4 font-semibold text-slate-600">Role</th>
-              <th className="py-3 px-4 font-semibold text-slate-600">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staff.map(user => (
-              <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="py-3 px-4">{user.name}</td>
-                <td className="py-3 px-4">{user.email}</td>
-                <td className="py-3 px-4">
-                  <span className={\`px-2 py-1 rounded text-xs font-bold \${user.role === 'super_admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}\`}>
-                    {user.role}
-                  </span>
-                </td>
-                <td className="py-3 px-4">
-                  {user.role !== 'super_admin' && <button className="text-red-500 hover:underline text-sm">Remove</button>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid md:grid-cols-3 gap-8">
+        {/* Create Staff Form */}
+        <div className="md:col-span-1">
+          <div className="glass-card rounded-2xl p-6 border border-white/10 sticky top-24">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <UserPlus size={20} className="text-blue-400" /> Add New Staff
+            </h2>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Name</label>
+                <input type="text" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="e.g. Budi Support" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+                <input type="email" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="staff@midrash.com" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                <input type="password" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="••••••••" />
+              </div>
+              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-bold transition-all mt-4 text-sm shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                Create Account
+              </button>
+            </form>
+            <div className="mt-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex gap-3 items-start">
+              <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+              <p>New accounts are created with the <strong>'staff'</strong> role by default. Staff cannot access this management page.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Staff List Table */}
+        <div className="md:col-span-2">
+          <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-6 border-b border-white/5 bg-white/5">
+              <h2 className="text-xl font-bold">Active Accounts</h2>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-900/50">
+                  <tr>
+                    <th className="py-4 px-6 font-semibold text-slate-400 uppercase tracking-wider text-xs">Name</th>
+                    <th className="py-4 px-6 font-semibold text-slate-400 uppercase tracking-wider text-xs">Email</th>
+                    <th className="py-4 px-6 font-semibold text-slate-400 uppercase tracking-wider text-xs">Role</th>
+                    <th className="py-4 px-6 font-semibold text-slate-400 uppercase tracking-wider text-xs text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {staff.map(user => (
+                    <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-6 font-medium text-white">{user.name}</td>
+                      <td className="py-4 px-6 text-slate-300">{user.email}</td>
+                      <td className="py-4 px-6">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${user.role === 'super_admin' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        {user.role !== 'super_admin' && (
+                          <button className="text-slate-500 hover:text-red-400 transition-colors flex items-center justify-end gap-1 text-xs font-medium w-full" onClick={() => alert('Remove requested')}>
+                            <Trash2 size={16} /> Remove
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
