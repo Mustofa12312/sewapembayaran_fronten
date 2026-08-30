@@ -95,16 +95,16 @@ export default function CustomerDashboard() {
         {/* Stats Cards */}
         <div className="glass-card rounded-2xl p-6 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-4 text-slate-400">
-            <Package size={20} /> <span className="font-medium text-sm">Active Licenses</span>
+            <Package size={20} /> <span className="font-medium text-sm">Total Orders</span>
           </div>
-          <div className="text-4xl font-bold text-white">1</div>
+          <div className="text-4xl font-bold text-white">{orders.length}</div>
         </div>
         
         <div className="glass-card rounded-2xl p-6 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-4 text-slate-400">
             <RefreshCw size={20} /> <span className="font-medium text-sm">Active Subscriptions</span>
           </div>
-          <div className="text-4xl font-bold text-white">0</div>
+          <div className="text-4xl font-bold text-white">{orders.filter(o => o.package?.is_recurring && o.status === 'ACTIVE').length}</div>
         </div>
       </div>
       
@@ -137,9 +137,9 @@ export default function CustomerDashboard() {
               <tbody className="divide-y divide-white/5">
                 {orders.map(order => (
                   <tr key={order.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-6 font-mono text-slate-300">{order.id}</td>
-                    <td className="py-4 px-6 font-medium text-white">{order.product}</td>
-                    <td className="py-4 px-6 text-slate-400">{order.date}</td>
+                    <td className="py-4 px-6 font-mono text-slate-300">{order.order_number || order.id}</td>
+                    <td className="py-4 px-6 font-medium text-white">{order.product?.name || order.package?.name || 'Unknown'}</td>
+                    <td className="py-4 px-6 text-slate-400">{new Date(order.created_at).toLocaleDateString()}</td>
                     <td className="py-4 px-6">
                       <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
                         {order.status}
@@ -147,10 +147,12 @@ export default function CustomerDashboard() {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-3">
-                        <button className="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs font-medium" onClick={() => alert('Renewal requested')}>
-                          <RefreshCw size={14} /> Renew
-                        </button>
-                        <Link to={`/order/${order.token}`} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded flex items-center gap-1 text-xs font-medium transition-colors">
+                        {order.package?.is_recurring && (
+                          <button className="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs font-medium" onClick={() => alert('Renewal requested')}>
+                            <RefreshCw size={14} /> Renew
+                          </button>
+                        )}
+                        <Link to={`/order/${order.secure_token}`} className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded flex items-center gap-1 text-xs font-medium transition-colors">
                           <Key size={14} /> License Key
                         </Link>
                       </div>

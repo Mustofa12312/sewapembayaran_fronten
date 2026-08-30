@@ -50,10 +50,10 @@ export default function AdminOrders() {
             <tbody className="divide-y divide-white/5">
               {orders.map(o => (
                 <tr key={o.id} className="hover:bg-white/5 transition-colors">
-                  <td className="py-4 px-6 font-mono text-slate-400 text-xs">{o.id}</td>
+                  <td className="py-4 px-6 font-mono text-slate-400 text-xs">{o.order_number || o.id}</td>
                   <td className="py-4 px-6">
-                    <p className="text-slate-200 font-medium">{o.user?.name || 'Guest'}</p>
-                    <p className="text-xs text-slate-500">{o.user?.email || 'N/A'}</p>
+                    <p className="text-slate-200 font-medium">{o.customer_name || 'Guest'}</p>
+                    <p className="text-xs text-slate-500">{o.customer_email || 'N/A'}</p>
                   </td>
                   <td className="py-4 px-6 text-slate-300">{o.product?.name || 'N/A'}</td>
                   <td className="py-4 px-6 text-emerald-400 font-bold">Rp {parseInt(o.snapshot_price || 0).toLocaleString('id-ID')}</td>

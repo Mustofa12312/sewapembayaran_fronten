@@ -34,7 +34,9 @@ export default function AdminProducts() {
       setFormData({ name: '', slug: '', description: '', status: 'ACTIVE' });
       fetchProducts();
     } catch (err) {
-      alert('Failed to create product');
+      const msg = err.response?.data?.message || 'Failed to create product';
+      alert(`Error: ${msg}`);
+      console.error(err.response?.data);
     } finally {
       setSubmitting(false);
     }

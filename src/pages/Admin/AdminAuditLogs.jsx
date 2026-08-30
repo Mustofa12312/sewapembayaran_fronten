@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Activity, Search, Filter } from 'lucide-react';
-import api from '../../../lib/api';
+import api from '../../lib/api';
 
 export default function AdminAuditLogs() {
   const [logs, setLogs] = useState([]);
