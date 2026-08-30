@@ -1,12 +1,23 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import api from '../../../lib/api';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    localStorage.setItem('admin_token', 'mock-token');
-    navigate('/admin/dashboard');
+    setError('');
+    try {
+      const response = await api.post('/admin/login', { email, password });
+      localStorage.setItem('admin_token', response.data.token);
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
+    }
   };
 
   return (
@@ -24,14 +35,15 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
+          {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm text-center">{error}</div>}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Email / Username</label>
-            <input type="text" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" placeholder="admin@midrash.com" />
+            <input type="text" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" placeholder="admin@midrash.com" />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-            <input type="password" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" placeholder="••••••••" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" placeholder="••••••••" />
           </div>
 
           <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] mt-6 text-sm tracking-wide">

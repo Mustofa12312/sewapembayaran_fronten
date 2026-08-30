@@ -1,10 +1,59 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CreditCard, Tag, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '../../lib/api';
 
 export default function Checkout() {
-  const handleCheckout = (e) => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Load Midtrans Snap Script
+  useEffect(() => {
+    const script = document.createElement('script');
+    // Using sandbox URL for development
+    script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+    script.setAttribute('data-client-key', 'SB-Mid-client-XXXXX'); // Normally from env
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); }
+  }, []);
+
+  const handlePayment = async (e) => {
     e.preventDefault();
-    alert('Mock: Processing payment');
+    setLoading(true);
+    setError('');
+    try {
+      // Create order in backend
+      const response = await api.post('/orders', {
+        package_id: 1, // hardcoded for demo, normally from cart/state
+        quantity: 1
+      });
+      
+      const snapToken = response.data.snap_token;
+      
+      // Trigger Midtrans Snap Popup
+      window.snap.pay(snapToken, {
+        onSuccess: function(result){
+          navigate('/dashboard');
+        },
+        onPending: function(result){
+          navigate('/dashboard');
+        },
+        onError: function(result){
+          setError('Payment failed.');
+        },
+        onClose: function(){
+          setLoading(false);
+        }
+      });
+    } catch (err) {
+      if (err.response?.status === 401) {
+        navigate('/login');
+      } else {
+        setError('Failed to initiate payment.');
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -17,7 +66,8 @@ export default function Checkout() {
             <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
               <ShieldCheck className="text-emerald-400" /> Billing Information
             </h2>
-            <form id="checkoutForm" onSubmit={handleCheckout} className="space-y-4">
+            {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm text-center mb-4">{error}</div>}
+            <form id="checkoutForm" onSubmit={handlePayment} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
                 <input type="text" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" />
@@ -73,8 +123,8 @@ export default function Checkout() {
               </div>
             </div>
             
-            <button form="checkoutForm" type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2">
-              <CreditCard size={18} /> Pay Securely with Midtrans
+            <button type="submit" form="checkoutForm" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white py-4 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2">
+              <CreditCard size={18} /> {loading ? 'Processing...' : 'Pay Securely with Midtrans'}
             </button>
             <p className="text-center text-xs text-slate-500 mt-4 flex items-center justify-center gap-1">
               <ShieldCheck size={14} /> End-to-end encrypted transaction

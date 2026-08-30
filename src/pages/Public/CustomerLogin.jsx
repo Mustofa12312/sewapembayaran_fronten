@@ -1,12 +1,23 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import api from '../../../lib/api';
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    localStorage.setItem('customer_token', 'mock-token');
-    navigate('/dashboard');
+    setError('');
+    try {
+      const response = await api.post('/customer/login', { email, password });
+      localStorage.setItem('customer_token', response.data.token);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
+    }
   };
 
   return (
@@ -24,9 +35,10 @@ export default function CustomerLogin() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
+          {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm text-center">{error}</div>}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
-            <input type="email" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all" placeholder="name@example.com" />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all" placeholder="name@example.com" />
           </div>
           
           <div>
@@ -34,7 +46,7 @@ export default function CustomerLogin() {
               <label className="block text-sm font-medium text-slate-300">Password</label>
               <a href="#" className="text-xs text-purple-400 hover:text-purple-300 transition-colors">Forgot password?</a>
             </div>
-            <input type="password" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all" placeholder="••••••••" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all" placeholder="••••••••" />
           </div>
 
           <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)] mt-4">

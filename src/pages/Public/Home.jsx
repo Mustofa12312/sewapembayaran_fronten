@@ -1,40 +1,25 @@
 import { Link } from 'react-router-dom';
 import { Shield, Zap, Lock, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import api from '../../lib/api';
 
 export default function Home() {
-  const [products, setProducts] = useState([
-    {
-      id: 1,
-      slug: 'vpn-premium',
-      name: 'VPN Premium',
-      description: 'Military-grade encryption with ultra-fast servers worldwide. Unblock content securely.',
-      price: '50000',
-      icon: <Shield className="w-8 h-8 text-blue-400" />,
-      popular: true,
-      features: ['Unlimited Bandwidth', 'No Logs Policy', '5 Devices', '24/7 Support']
-    },
-    {
-      id: 2,
-      slug: 'proxy-elite',
-      name: 'Proxy Elite',
-      description: 'High anonymity proxies for web scraping, gaming, and secure browsing.',
-      price: '25000',
-      icon: <Zap className="w-8 h-8 text-purple-400" />,
-      popular: false,
-      features: ['99.9% Uptime', 'Rotating IPs', 'HTTP/SOCKS5', 'Instant Setup']
-    },
-    {
-      id: 3,
-      slug: 'rdp-admin',
-      name: 'RDP Admin',
-      description: 'Full administrator access to high-performance remote desktop servers.',
-      price: '150000',
-      icon: <Lock className="w-8 h-8 text-emerald-400" />,
-      popular: false,
-      features: ['Windows Server 2022', '10Gbps Port', 'DDoS Protection', 'Dedicated IP']
-    }
-  ]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await api.get('/products');
+        setProducts(response.data);
+      } catch (err) {
+        console.error("Failed to fetch products", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   return (
     <div className="flex flex-col items-center">
@@ -76,42 +61,40 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {products.map(product => (
-            <div key={product.id} className="relative group rounded-2xl glass-card p-1 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.3)]">
-              {product.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full shadow-lg z-10">
-                  Most Popular
+          {products.map((product) => (
+            <div key={product.id} className="relative group cursor-pointer" onClick={() => window.location.href=`/product/${product.slug}`}>
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/5 rounded-3xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100 duration-500"></div>
+              <div className="relative glass-card rounded-3xl p-8 border border-white/10 hover:border-blue-500/50 transition-all duration-300 h-full flex flex-col hover:bg-blue-500/5">
+                <div className="flex-1">
+                  <div className="w-10 h-10 text-blue-400 mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <Zap className="w-full h-full" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">{product.name}</h3>
+                  <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                    {product.description}
+                  </p>
+                  <ul className="space-y-3 mb-8">
+                    {product.packages && product.packages.length > 0 && product.packages[0].features && product.packages[0].features.map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-3 text-sm text-slate-300">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>{feature.name}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              )}
-              
-              <div className="bg-slate-900/80 rounded-xl h-full p-8 flex flex-col relative overflow-hidden">
-                {/* Glow effect behind icon */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-500/20 transition-colors"></div>
-                
-                <div className="mb-6 bg-slate-800/50 w-16 h-16 rounded-2xl flex items-center justify-center border border-white/5">
-                  {product.icon}
+                <div className="pt-6 border-t border-white/10 flex items-center justify-between mt-auto">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Starting from</p>
+                    <p className="text-xl font-bold text-white">
+                      {product.packages && product.packages.length > 0 
+                        ? `Rp ${parseInt(product.packages[0].price).toLocaleString('id-ID')}` 
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <Link to={`/product/${product.slug}`} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-white" />
+                  </Link>
                 </div>
-                
-                <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
-                <p className="text-slate-400 mb-6 text-sm flex-1">{product.description}</p>
-                
-                <div className="mb-6">
-                  <span className="text-3xl font-extrabold text-white">Rp {parseInt(product.price).toLocaleString('id-ID')}</span>
-                  <span className="text-slate-500 text-sm">/mo</span>
-                </div>
-                
-                <ul className="space-y-3 mb-8">
-                  {product.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-sm text-slate-300">
-                      <CheckCircle2 size={18} className="text-blue-400 shrink-0 mt-0.5" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                
-                <Link to={`/product/${product.slug}`} className="block w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white text-center font-semibold rounded-lg transition-colors border border-white/5 group-hover:border-blue-500/30 group-hover:bg-blue-600/10 group-hover:text-blue-400">
-                  View Details
-                </Link>
               </div>
             </div>
           ))}
