@@ -1,10 +1,47 @@
-import { Link } from 'react-router-dom';
-import { Package, RefreshCw, Key, Share2, Wallet } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Package, RefreshCw, Key, Share2, Wallet, Users, LogOut, Copy } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '../../lib/api';
 
 export default function CustomerDashboard() {
-  const orders = [
-    { id: 'ORD-2026-XYZ123', product: 'VPN Premium', status: 'ACTIVE', token: 'mock-secure-token', date: '2026-08-30' }
-  ];
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [affiliate, setAffiliate] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [ordersRes, affiliateRes] = await Promise.all([
+          api.get('/customer/orders'),
+          api.get('/customer/affiliate')
+        ]);
+        setOrders(ordersRes.data);
+        setAffiliate(affiliateRes.data);
+      } catch (err) {
+        if (err.response?.status === 401) {
+          localStorage.removeItem('customer_token');
+          navigate('/login');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/customer/logout');
+    } catch(e) {}
+    localStorage.removeItem('customer_token');
+    navigate('/login');
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert('Copied to clipboard!');
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
@@ -13,9 +50,14 @@ export default function CustomerDashboard() {
           <h1 className="text-3xl font-bold mb-2">Welcome Back!</h1>
           <p className="text-slate-400 text-sm">Manage your licenses, subscriptions, and affiliate earnings.</p>
         </div>
-        <Link to="/" className="text-blue-400 hover:text-blue-300 font-medium text-sm bg-blue-500/10 px-4 py-2 rounded-lg border border-blue-500/20 hover:bg-blue-500/20 transition-colors">
-          Browse Products
-        </Link>
+        <div className="flex gap-3">
+          <Link to="/" className="text-blue-400 hover:text-blue-300 font-medium text-sm bg-blue-500/10 px-4 py-2 rounded-lg border border-blue-500/20 hover:bg-blue-500/20 transition-colors">
+            Browse Products
+          </Link>
+          <button onClick={handleLogout} className="text-red-400 hover:text-red-300 font-medium text-sm bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center gap-2">
+            <LogOut size={16} /> Logout
+          </button>
+        </div>
       </div>
       
       <div className="grid md:grid-cols-3 gap-6 mb-10">
@@ -35,17 +77,17 @@ export default function CustomerDashboard() {
           
           <div className="bg-black/40 backdrop-blur-md px-4 py-3 rounded-xl border border-white/5 flex justify-between items-center mb-4">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Your Code</span>
-            <span className="font-mono font-bold text-lg text-purple-300">AX789B</span>
+            <span className="font-mono font-bold text-lg text-purple-300">{affiliate?.referral_code || '---'}</span>
           </div>
           
           <div className="flex justify-between items-center text-sm">
             <div>
               <p className="text-slate-400 text-xs mb-1">Balance</p>
-              <p className="text-xl font-bold text-emerald-400">Rp 50.000</p>
+              <p className="text-xl font-bold text-emerald-400">Rp {parseInt(affiliate?.total_commission || 0).toLocaleString('id-ID')}</p>
             </div>
             <div className="text-right">
               <p className="text-slate-400 text-xs mb-1">Total Referrals</p>
-              <p className="text-xl font-bold text-white">1</p>
+              <p className="text-xl font-bold text-white">{affiliate?.total_referrals || 0}</p>
             </div>
           </div>
         </div>

@@ -1,17 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, ShieldAlert, Trash2 } from 'lucide-react';
+import api from '../../lib/api';
 
 export default function AdminStaff() {
-  const [staff, setStaff] = useState([
-    { id: 1, name: 'Super Admin', email: 'admin@midrash.com', role: 'super_admin' },
-    { id: 2, name: 'Staff Support', email: 'staff@midrash.com', role: 'staff' }
-  ]);
-
+  const [staff, setStaff] = useState([]);
   const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
 
-  const handleCreate = (e) => {
+  const fetchStaff = async () => {
+    try {
+      const res = await api.get('/admin/staff');
+      setStaff(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  const handleCreate = async (e) => {
     e.preventDefault();
-    alert('Mock: Create staff');
+    setError('');
+    try {
+      await api.post('/admin/staff', newStaff);
+      setNewStaff({ name: '', email: '', password: '' });
+      fetchStaff();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create staff');
+    }
   };
 
   return (
@@ -31,17 +49,18 @@ export default function AdminStaff() {
               <UserPlus size={20} className="text-blue-400" /> Add New Staff
             </h2>
             <form onSubmit={handleCreate} className="space-y-4">
+              {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm text-center">{error}</div>}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Name</label>
-                <input type="text" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="e.g. Budi Support" />
+                <input type="text" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="e.g. Budi Support" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
-                <input type="email" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="staff@midrash.com" />
+                <input type="email" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="staff@midrash.com" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-                <input type="password" required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="••••••••" />
+                <input type="password" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-2.5 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all text-sm" placeholder="••••••••" />
               </div>
               <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-bold transition-all mt-4 text-sm shadow-[0_0_15px_rgba(37,99,235,0.3)]">
                 Create Account

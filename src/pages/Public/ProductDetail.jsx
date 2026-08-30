@@ -1,15 +1,30 @@
 import { useParams, Link } from 'react-router-dom';
 import { Shield, Zap, Lock, CheckCircle2, ChevronLeft, CreditCard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import api from '../../lib/api';
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
-  // Mock data mapping
-  const packages = [
-    { id: 1, name: 'Basic (1 Month)', price: '50000', features: ['1 Device', 'Standard Speed', 'Email Support'], is_recurring: false },
-    { id: 2, name: 'Premium (Subscription)', price: '45000', features: ['5 Devices', 'Max Speed', '24/7 Priority Support', 'Auto Renewal'], is_recurring: true },
-    { id: 3, name: 'Ultimate (1 Year)', price: '450000', features: ['Unlimited Devices', 'Max Speed', 'Dedicated Account Manager'], is_recurring: false }
-  ];
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await api.get(`/products/${slug}`);
+        setProduct(res.data);
+      } catch (err) {
+        setError('Product not found.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [slug]);
+
+  if (loading) return <div className="max-w-7xl mx-auto px-6 py-12 text-center text-slate-400">Loading...</div>;
+  if (error || !product) return <div className="max-w-7xl mx-auto px-6 py-12 text-center text-red-400">{error || 'Product not found'}</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
@@ -19,18 +34,18 @@ export default function ProductDetail() {
       
       <div className="mb-12">
         <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 mb-6">
-          <Shield className="w-8 h-8 text-blue-400" />
+          <Zap className="w-8 h-8 text-blue-400" />
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">VPN Premium</h1>
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">{product.name}</h1>
         <p className="text-xl text-slate-400 max-w-2xl">
-          Military-grade encryption with ultra-fast servers worldwide. Unblock content securely and browse with complete anonymity.
+          {product.description}
         </p>
       </div>
 
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-6">Select a Plan</h2>
         <div className="grid md:grid-cols-3 gap-6">
-          {packages.map(pkg => (
+          {product.packages && product.packages.map(pkg => (
             <div key={pkg.id} className="relative group rounded-2xl glass-card p-1 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/50">
               <div className="bg-slate-900/90 rounded-xl h-full p-6 flex flex-col">
                 <div className="flex justify-between items-start mb-4">
@@ -40,14 +55,14 @@ export default function ProductDetail() {
                 
                 <div className="text-4xl font-extrabold mb-6 text-white">
                   Rp {parseInt(pkg.price).toLocaleString('id-ID')}
-                  {pkg.is_recurring && <span className="text-lg font-normal text-slate-500">/mo</span>}
+                  {pkg.is_recurring && <span className="text-lg font-normal text-slate-500">/{pkg.duration_days} days</span>}
                 </div>
                 
                 <ul className="space-y-3 mb-8 flex-1">
-                  {pkg.features.map((f, i) => (
+                  {pkg.features && pkg.features.map((f, i) => (
                     <li key={i} className="flex items-start text-sm text-slate-300">
                       <CheckCircle2 size={16} className="text-blue-400 mr-2 shrink-0 mt-0.5" />
-                      {f}
+                      {f.name}
                     </li>
                   ))}
                 </ul>

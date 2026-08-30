@@ -1,10 +1,12 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CreditCard, Tag, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const packageId = searchParams.get('package_id');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,24 +22,29 @@ export default function Checkout() {
 
   const handlePayment = async (e) => {
     e.preventDefault();
+    if (!packageId) {
+      setError('No package selected for checkout.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       // Create order in backend
       const response = await api.post('/orders', {
-        package_id: 1, // hardcoded for demo, normally from cart/state
+        package_id: packageId,
         quantity: 1
       });
       
       const snapToken = response.data.snap_token;
+      const orderToken = response.data.order.secure_token;
       
       // Trigger Midtrans Snap Popup
       window.snap.pay(snapToken, {
         onSuccess: function(result){
-          navigate('/dashboard');
+          navigate(`/order/${orderToken}`);
         },
         onPending: function(result){
-          navigate('/dashboard');
+          navigate(`/order/${orderToken}`);
         },
         onError: function(result){
           setError('Payment failed.');

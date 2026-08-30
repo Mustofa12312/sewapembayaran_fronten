@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, ShoppingCart, CheckCircle, Clock, CheckSquare, XCircle, Key, Link2 } from 'lucide-react';
+import api from '../../lib/api';
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState({
@@ -13,18 +14,25 @@ export default function Dashboard() {
     assigned_licenses: 0
   });
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    // Mock fetching exactly matching PRD Section 21
-    setMetrics({
-      revenue: 25500000,
-      orders: 250,
-      paid_orders: 238,
-      pending_payments: 12,
-      active_orders: 180,
-      expired_orders: 70,
-      available_licenses: 350,
-      assigned_licenses: 250
-    });
+    const fetchAnalytics = async () => {
+      try {
+        const res = await api.get('/admin/analytics');
+        // Our backend API currently returns: revenue, orders, customers, subscriptions.
+        // For the sake of PRD alignment in UI, we'll map what we have and keep others 0 if missing.
+        setMetrics(prev => ({
+          ...prev,
+          ...res.data.metrics
+        }));
+      } catch (err) {
+        console.error("Failed to fetch analytics");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
   }, []);
 
   const formatCurrency = (amount) => {
