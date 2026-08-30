@@ -29,4 +29,4 @@ export default function OrderResult() {
       </div>
     </div>
   );
-}\n
+}

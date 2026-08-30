@@ -31,4 +31,4 @@ export default function CustomerRegister() {
       </p>
     </div>
   );
-}\n
+}

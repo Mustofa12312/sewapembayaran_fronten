@@ -27,4 +27,4 @@ export default function CustomerLogin() {
       </p>
     </div>
   );
-}\n
+}

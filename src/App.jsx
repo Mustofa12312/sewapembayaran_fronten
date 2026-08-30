@@ -10,6 +10,7 @@ import CustomerRegister from './pages/Public/CustomerRegister';
 import CustomerDashboard from './pages/Public/CustomerDashboard';
 import AdminLogin from './pages/Admin/Login';
 import AdminDashboard from './pages/Admin/Dashboard';
+import AdminStaff from './pages/Admin/AdminStaff';
 
 function App() {
   return (
@@ -27,9 +28,10 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="login" element={<AdminLogin />} />
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="staff" element={<AdminStaff />} />
         </Route>
       </Routes>
     </BrowserRouter>
   );
 }
-export default App;\n
+export default App;

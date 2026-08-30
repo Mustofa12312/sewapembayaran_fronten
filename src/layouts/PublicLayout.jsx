@@ -24,4 +24,4 @@ export default function PublicLayout() {
       </footer>
     </div>
   );
-}\n
+}

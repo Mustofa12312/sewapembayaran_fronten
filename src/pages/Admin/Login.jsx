@@ -4,4 +4,4 @@ export default function Login() {
       <div className="bg-white p-8 rounded shadow text-center">Admin Login Placeholder</div>
     </div>
   )
-}\n
+}

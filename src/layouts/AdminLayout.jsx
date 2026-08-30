@@ -8,6 +8,7 @@ export default function AdminLayout() {
         <nav className="flex-1 p-4 space-y-2">
           <Link to="/admin/dashboard" className="block py-2 px-4 rounded hover:bg-slate-800 transition">Dashboard</Link>
           <Link to="/admin/products" className="block py-2 px-4 rounded hover:bg-slate-800 transition">Products</Link>
+          <Link to="/admin/staff" className="block py-2 px-4 rounded hover:bg-slate-800 transition">Staff & Roles</Link>
         </nav>
       </aside>
       <main className="flex-1 p-8 overflow-auto">
@@ -15,4 +16,4 @@ export default function AdminLayout() {
       </main>
     </div>
   );
-}\n
+}
