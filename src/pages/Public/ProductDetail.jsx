@@ -1,10 +1,14 @@
-import { useParams, Link } from 'react-router-dom';
-import { Shield, Zap, Lock, CheckCircle2, ChevronLeft, CreditCard } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Shield, Zap, Lock, CheckCircle2, ChevronLeft, CreditCard, Box, HelpCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import Card, { CardHeader, CardTitle } from '../../components/ui/Card';
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,72 +27,170 @@ export default function ProductDetail() {
     fetchProduct();
   }, [slug]);
 
-  if (loading) return <div className="max-w-7xl mx-auto px-6 py-12 text-center text-slate-400">Loading...</div>;
-  if (error || !product) return <div className="max-w-7xl mx-auto px-6 py-12 text-center text-red-400">{error || 'Product not found'}</div>;
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-16 flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4" />
+        <p className="text-slate-400 font-medium">Loading product details...</p>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-16 text-center">
+        <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+          <HelpCircle className="text-red-400 w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Product Not Found</h2>
+        <p className="text-slate-400 mb-6">{error || 'The product you are looking for does not exist.'}</p>
+        <Button onClick={() => navigate('/')} variant="secondary">Back to Store</Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white mb-8 transition-colors">
-        <ChevronLeft size={20} className="mr-1" /> Back to Products
-      </Link>
+    <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
+      {/* Breadcrumb */}
+      <nav className="flex items-center text-sm text-slate-400 font-medium mb-10">
+        <Link to="/" className="hover:text-white transition-colors flex items-center gap-1">
+          <ChevronLeft size={16} /> Products
+        </Link>
+        <span className="mx-2 text-slate-600">/</span>
+        <span className="text-white">{product.name}</span>
+      </nav>
       
-      <div className="mb-12">
-        <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 mb-6">
-          <Zap className="w-8 h-8 text-blue-400" />
+      {/* Product Header */}
+      <div className="mb-16 max-w-3xl">
+        <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center border border-white/10 mb-6 shadow-lg shadow-blue-500/5">
+          <Box className="w-8 h-8 text-blue-400" />
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">{product.name}</h1>
-        <p className="text-xl text-slate-400 max-w-2xl">
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">{product.name}</h1>
+        <p className="text-lg md:text-xl text-slate-400 leading-relaxed">
           {product.description}
         </p>
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-6">Select a Plan</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {product.packages && product.packages.map(pkg => (
-            <div key={pkg.id} className="relative group rounded-2xl glass-card p-1 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/50">
-              <div className="bg-slate-900/90 rounded-xl h-full p-6 flex flex-col">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold">{pkg.name}</h3>
-                  {pkg.is_recurring && <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs px-2 py-1 rounded-full font-bold uppercase tracking-wider">Subscription</span>}
-                </div>
-                
-                <div className="text-4xl font-extrabold mb-6 text-white">
-                  Rp {parseInt(pkg.price).toLocaleString('id-ID')}
-                  {pkg.is_recurring && <span className="text-lg font-normal text-slate-500">/{pkg.duration_days} days</span>}
-                </div>
-                
-                <ul className="space-y-3 mb-8 flex-1">
-                  {pkg.features && pkg.features.map((f, i) => (
-                    <li key={i} className="flex items-start text-sm text-slate-300">
-                      <CheckCircle2 size={16} className="text-blue-400 mr-2 shrink-0 mt-0.5" />
-                      {f.name}
-                    </li>
-                  ))}
-                </ul>
-                
-                <Link to={`/checkout?package_id=${pkg.id}`} className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors shadow-lg shadow-blue-500/20">
-                  <CreditCard size={18} /> Purchase Now
-                </Link>
-              </div>
-            </div>
-          ))}
+      {/* Pricing/Packages */}
+      <div className="mb-20">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Zap className="text-blue-400" size={24} /> Select a Plan
+          </h2>
         </div>
+        
+        {product.packages && product.packages.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {product.packages.map((pkg, idx) => {
+              // Highlight the middle package or the first one if less than 3
+              const isPopular = product.packages.length >= 3 ? idx === 1 : idx === 0;
+              
+              return (
+                <div 
+                  key={pkg.id} 
+                  className={`relative rounded-3xl p-[1px] transition-all duration-300 ${
+                    isPopular 
+                      ? 'bg-gradient-to-b from-blue-500 to-purple-600 shadow-2xl shadow-blue-500/20 hover:-translate-y-2 z-10' 
+                      : 'bg-white/10 hover:bg-white/20 hover:-translate-y-1'
+                  }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
+                      Most Popular
+                    </div>
+                  )}
+                  
+                  <div className={`rounded-[23px] h-full p-8 flex flex-col ${isPopular ? 'bg-[var(--color-dark-surface)]' : 'bg-[var(--color-dark-card)]'}`}>
+                    <div className="flex justify-between items-start mb-6">
+                      <h3 className="text-xl font-bold text-white">{pkg.name}</h3>
+                      {pkg.is_recurring && (
+                        <Badge variant="new" size="sm">Subscription</Badge>
+                      )}
+                    </div>
+                    
+                    <div className="mb-8">
+                      <div className="flex items-end gap-1">
+                        <span className="text-4xl font-extrabold text-white">
+                          Rp {parseInt(pkg.price).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-sm mt-2">
+                        {pkg.is_recurring ? `Billed every ${pkg.duration_value} ${pkg.duration_unit.toLowerCase()}s` : 'One-time payment'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">What's included</p>
+                      <ul className="space-y-4 mb-8">
+                        {pkg.features && pkg.features.map((f, i) => (
+                          <li key={i} className="flex items-start text-sm text-slate-300">
+                            <CheckCircle2 size={18} className="text-emerald-400 mr-3 shrink-0 mt-0.5" />
+                            <span className="leading-relaxed">{f.name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <Button 
+                      variant={isPopular ? 'primary' : 'secondary'} 
+                      size="lg" 
+                      className="w-full mt-auto"
+                      onClick={() => navigate(`/checkout?package_id=${pkg.id}`)}
+                      icon={CreditCard}
+                    >
+                      Choose Plan
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <Card padding="p-10" className="text-center">
+            <p className="text-slate-400">No packages available for this product at the moment.</p>
+          </Card>
+        )}
       </div>
       
-      <div className="bg-slate-900 border border-white/5 p-8 rounded-2xl">
-        <h3 className="text-xl font-bold mb-4">Product Details</h3>
-        <div className="prose prose-invert max-w-none text-slate-300 text-sm">
-          <p>
-            Our Premium VPN service gives you the freedom to browse the internet securely and without borders. 
-            With servers in over 60 countries, you can bypass geo-restrictions, secure your public Wi-Fi connections, 
-            and keep your ISP from tracking your online activities.
-          </p>
-          <ul className="mt-4 space-y-2 list-disc list-inside">
-            <li>Zero-logs policy audited by independent security firms.</li>
-            <li>WireGuard and OpenVPN protocols available.</li>
-            <li>Kill switch and DNS leak protection built-in.</li>
-          </ul>
+      {/* Product Details Section */}
+      <div className="grid md:grid-cols-3 gap-10">
+        <div className="md:col-span-2">
+          <Card padding="p-8 md:p-10">
+            <CardHeader>
+              <CardTitle className="text-2xl">Product Overview</CardTitle>
+            </CardHeader>
+            <div className="prose prose-invert prose-blue max-w-none text-slate-300">
+              <p className="text-base leading-relaxed mb-6">
+                Experience the best digital service with our premium licenses. Carefully curated and instantly delivered to ensure you can start immediately.
+              </p>
+              <h4 className="text-white font-semibold text-lg mb-3 mt-8">Key Benefits</h4>
+              <ul className="space-y-3 mb-6 list-none pl-0">
+                <li className="flex items-center gap-3"><Shield className="text-blue-400 w-5 h-5" /> <span>Secure and verified licenses.</span></li>
+                <li className="flex items-center gap-3"><Lock className="text-blue-400 w-5 h-5" /> <span>Privacy focused and encrypted transactions.</span></li>
+                <li className="flex items-center gap-3"><Zap className="text-blue-400 w-5 h-5" /> <span>Instant automated delivery via email and dashboard.</span></li>
+              </ul>
+            </div>
+          </Card>
+        </div>
+        
+        <div>
+          <Card padding="p-6 md:p-8" className="bg-blue-500/5 border-blue-500/20">
+            <h3 className="text-lg font-bold text-white mb-4">Need Help?</h3>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              Have questions about this product or need help choosing the right plan? Our support team is here for you.
+            </p>
+            <Button variant="outline" className="w-full">Contact Support</Button>
+            
+            <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+              <div className="flex gap-3">
+                <Shield className="text-emerald-400 w-5 h-5 shrink-0" />
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Secure Checkout</h4>
+                  <p className="text-xs text-slate-500 mt-1">PCI-DSS Compliant via Midtrans</p>
+                </div>
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
