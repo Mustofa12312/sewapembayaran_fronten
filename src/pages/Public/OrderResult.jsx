@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle2, Copy, AlertCircle, RefreshCw, Box, Key, Clock, LogOut } from 'lucide-react';
+import { CheckCircle2, Copy, AlertCircle, RefreshCw, Box, Key, Clock, ArrowLeft, Download, ShieldCheck, Check } from 'lucide-react';
 import api from '../../lib/api';
+import Card, { CardHeader, CardTitle } from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import EmptyState from '../../components/ui/EmptyState';
 
 const PAID_STATUSES = ['ACTIVE', 'PAID'];
 const POLL_INTERVAL_MS = 3000;
@@ -12,7 +16,6 @@ async function copyToClipboardSafe(text) {
     await navigator.clipboard.writeText(text);
     return true;
   } catch {
-    // Fallback: create a temporary input
     const el = document.createElement('textarea');
     el.value = text;
     el.style.position = 'fixed';
@@ -32,6 +35,7 @@ export default function OrderResult() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const pollTimerRef = useRef(null);
   const pollTimeoutRef = useRef(null);
@@ -49,11 +53,9 @@ export default function OrderResult() {
       setOrder(data);
       setError('');
 
-      // Stop polling once order is in a terminal state
       if (PAID_STATUSES.includes(data.status) || data.status === 'REFUNDED' || data.status === 'EXPIRED') {
         stopPolling();
       }
-
       return data;
     } catch (e) {
       setError('Failed to load order. The link may be invalid.');
@@ -61,28 +63,23 @@ export default function OrderResult() {
     }
   }, [token, stopPolling]);
 
-  // Initial load + start polling if pending
   useEffect(() => {
     const init = async () => {
       setLoading(true);
       const data = await fetchOrder();
       setLoading(false);
 
-      // If still pending after initial load, start polling
       if (data && data.status === 'PENDING_PAYMENT') {
         setIsPolling(true);
-
         pollTimerRef.current = setInterval(async () => {
           await fetchOrder();
         }, POLL_INTERVAL_MS);
 
-        // Auto-stop after max timeout
         pollTimeoutRef.current = setTimeout(() => {
           stopPolling();
         }, POLL_TIMEOUT_MS);
       }
     };
-
     init();
     return () => stopPolling();
   }, [token, fetchOrder, stopPolling]);
@@ -92,29 +89,65 @@ export default function OrderResult() {
     if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } else {
-      alert('Could not copy automatically. Please copy manually.');
+    }
+  };
+
+  const handlePayNow = async () => {
+    setPaymentLoading(true);
+    try {
+      const res = await api.post(`/orders/${order.secure_token}/pay`);
+      if (window.snap) {
+        window.snap.pay(res.data.snap_token, {
+          onSuccess: () => fetchOrder(),
+          onPending: () => fetchOrder(),
+          onError: () => { alert('Payment failed.'); fetchOrder(); },
+          onClose: () => fetchOrder(),
+        });
+      } else {
+        alert('Payment system not ready. Please refresh the page.');
+      }
+    } catch (e) {
+      alert('Failed to initialize payment. Please try again.');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const downloadInvoice = async () => {
+    try {
+      const res = await api.get(`/orders/${order.secure_token}/invoice`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${order.order_number}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (e) {
+      alert('Failed to download invoice. Please try again.');
     }
   };
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-20 text-center">
-        <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-white">Loading Order Data...</h2>
+      <div className="max-w-4xl mx-auto px-6 py-24 flex flex-col items-center justify-center min-h-[60vh]">
+        <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-6" />
+        <h2 className="text-2xl font-bold text-white mb-2">Retrieving Order...</h2>
+        <p className="text-slate-400">Please wait while we fetch your order details.</p>
       </div>
     );
   }
 
   if (error || !order) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-20 text-center">
-        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-3xl font-bold text-white mb-4">Order Not Found</h2>
-        <p className="text-slate-400 mb-8">{error}</p>
-        <Link to="/" className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold">
-          Back to Homepage
-        </Link>
+      <div className="max-w-3xl mx-auto px-6 py-24 text-center">
+        <EmptyState 
+          icon={AlertCircle}
+          title="Order Not Found"
+          description={error}
+          actionLabel="Return to Homepage"
+          actionTo="/"
+        />
       </div>
     );
   }
@@ -125,168 +158,179 @@ export default function OrderResult() {
   const hasLicense = licenseKeys.length > 0;
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
-      <div className="text-center mb-10">
-        {isPaid ? (
-          <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
-        ) : (
-          <Clock className="w-16 h-16 text-amber-400 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]" />
-        )}
-        <h1 className="text-3xl md:text-4xl font-extrabold mb-4">
+    <div className="max-w-4xl mx-auto px-6 py-16">
+      <div className="text-center mb-12">
+        <div className="relative inline-block mb-6">
+          <div className={`absolute inset-0 blur-2xl opacity-40 rounded-full ${isPaid ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+          {isPaid ? (
+            <div className="w-24 h-24 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center relative z-10 mx-auto">
+              <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center relative z-10 mx-auto">
+              <Clock className="w-12 h-12 text-amber-400" />
+            </div>
+          )}
+        </div>
+        
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
           {isPaid ? 'Payment Successful!' : 'Waiting for Payment'}
         </h1>
-        <p className="text-slate-400">
-          Order ID: <span className="font-mono text-white font-bold">{order.order_number}</span>
-        </p>
-        {/* Polling indicator */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-slate-400 font-medium">
+          <p>Order ID: <span className="font-mono text-white bg-white/10 px-2 py-0.5 rounded text-sm">{order.order_number}</span></p>
+          <Badge variant={isPaid ? 'active' : isPending ? 'pending' : 'default'} size="sm" dot>
+            {order.status}
+          </Badge>
+        </div>
+        
         {isPolling && (
-          <div className="mt-4 flex items-center justify-center gap-2 text-amber-400 text-sm">
-            <RefreshCw size={14} className="animate-spin" />
-            Checking payment status...
+          <div className="mt-6 inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold">
+            <RefreshCw size={16} className="animate-spin" />
+            Checking payment status in real-time...
           </div>
         )}
       </div>
 
-      <div className="glass-card rounded-2xl p-8 mb-8 border border-white/10 relative overflow-hidden">
-        <div className={`absolute top-0 right-0 w-64 h-64 blur-3xl opacity-20 -mr-20 -mt-20 pointer-events-none ${isPaid ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-
-        <div className="grid md:grid-cols-2 gap-8 relative z-10">
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Box size={16} /> Order Summary
-            </h3>
-            <div className="space-y-4">
+      <div className="grid md:grid-cols-5 gap-8 mb-8">
+        {/* Order Summary */}
+        <div className="md:col-span-2 space-y-8">
+          <Card padding="p-6 md:p-8" className="h-full">
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Box size={20} className="text-blue-400" />
+              <CardTitle>Order Summary</CardTitle>
+            </CardHeader>
+            <div className="space-y-5">
               <div>
-                <p className="text-xs text-slate-500">Product</p>
-                <p className="font-bold text-lg">{order.product?.name || 'N/A'}</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Product</p>
+                <p className="font-bold text-lg text-white">{order.product?.name || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500">Package</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Package</p>
                 <p className="font-medium text-slate-300">{order.package?.name || 'N/A'}</p>
+                {order.package?.is_recurring && <Badge variant="new" size="xs" className="mt-2">Subscription</Badge>}
               </div>
-              <div>
-                <p className="text-xs text-slate-500">Total Amount</p>
-                <p className="font-bold text-xl text-emerald-400">
+              <div className="pt-5 border-t border-white/5">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Total Amount</p>
+                <p className="font-black text-2xl text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
                   Rp {parseInt(order.snapshot_price).toLocaleString('id-ID')}
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
+        </div>
 
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Key size={16} /> License Details
-            </h3>
+        {/* License Details & Actions */}
+        <div className="md:col-span-3">
+          <Card padding="p-6 md:p-8" glow={isPaid ? 'emerald' : ''} className="h-full flex flex-col">
+            <CardHeader className="flex flex-row items-center gap-2">
+              <Key size={20} className="text-purple-400" />
+              <CardTitle>License Access</CardTitle>
+            </CardHeader>
 
             {hasLicense ? (
-              <div className="bg-slate-900/80 border border-emerald-500/30 rounded-xl p-4">
-                <p className="text-xs text-slate-400 mb-1 font-semibold uppercase tracking-wider">⚠️ Keep this key confidential. Do not share it.</p>
+              <div className="flex-1 space-y-6">
+                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3.5 rounded-xl text-sm flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 shrink-0" />
+                  <p className="leading-relaxed font-medium">Keep this license key strictly confidential. Do not share it publicly.</p>
+                </div>
+                
                 {licenseKeys.map((lk, idx) => (
-                  <div key={lk.id ?? idx} className="mt-3">
-                    <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-1">License Key {licenseKeys.length > 1 ? `#${idx + 1}` : ''}</p>
-                    <div className="flex items-center gap-2 bg-black/50 rounded-lg p-3 border border-white/5">
-                      <code className="font-mono text-emerald-300 font-bold flex-1 break-all text-sm">
+                  <div key={lk.id ?? idx}>
+                    <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-2">
+                      License Key {licenseKeys.length > 1 ? `#${idx + 1}` : ''}
+                    </p>
+                    <div className="flex items-center gap-3 bg-[var(--color-dark-bg)] rounded-xl p-2 pl-4 border border-emerald-500/30 group">
+                      <code className="font-mono text-emerald-300 font-bold flex-1 break-all text-base md:text-lg">
                         {lk.license_key}
                       </code>
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="md"
                         onClick={() => handleCopy(lk.license_key)}
-                        aria-label="Copy license key"
-                        className="p-2 bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 rounded transition-colors shrink-0"
+                        className="shrink-0 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-transparent hover:border-emerald-500/30"
                       >
-                        {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
-                      </button>
+                        {copied ? <Check size={18} /> : <Copy size={18} />}
+                      </Button>
                     </div>
                   </div>
                 ))}
-                {order.end_date && (
-                  <p className="text-xs text-slate-400 mt-4">
-                    Expires: <span className="font-bold text-white">{new Date(order.end_date).toLocaleDateString()}</span>
-                  </p>
-                )}
-                {!order.end_date && isPaid && (
-                  <p className="text-xs text-emerald-400 mt-4 font-bold">Lifetime Access (Never Expires)</p>
-                )}
+                
+                <div className="pt-4 border-t border-white/5 flex gap-6">
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium mb-1">Status</p>
+                    <p className="text-sm font-bold text-white">Active</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium mb-1">Expiration</p>
+                    {order.end_date ? (
+                      <p className="text-sm font-bold text-white">{new Date(order.end_date).toLocaleDateString()}</p>
+                    ) : (
+                      <p className="text-sm font-bold text-emerald-400">Lifetime (Never Expires)</p>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="bg-slate-900/80 border border-white/10 rounded-xl p-6 text-center">
+              <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
                 {isPending ? (
                   <>
-                    <Clock className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-                    <p className="text-slate-400 text-sm mb-4">
-                      Your license will appear here once payment is confirmed by our system.
+                    <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center border border-white/10 mb-4">
+                      <Clock className="w-8 h-8 text-amber-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-2">Pending Payment</h3>
+                    <p className="text-slate-400 text-sm max-w-sm mb-6">
+                      Your license key is securely generated and waiting to be revealed once payment is confirmed.
                     </p>
+                    <Button variant="outline" size="sm" onClick={fetchOrder} icon={RefreshCw}>
+                      Refresh Status
+                    </Button>
                   </>
                 ) : (
-                  <p className="text-slate-400 mb-4 text-sm">License will be revealed after payment is confirmed.</p>
+                  <EmptyState 
+                    icon={Key} 
+                    title="License Hidden" 
+                    description="License will be revealed after payment is confirmed."
+                  />
                 )}
-                <button
-                  onClick={fetchOrder}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-medium transition-colors border border-white/10 flex items-center gap-2 mx-auto"
-                >
-                  <RefreshCw size={14} /> Refresh Status
-                </button>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="mt-6 space-y-3">
+            <div className="mt-8 space-y-3 pt-6 border-t border-white/5">
               {isPaid && (
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await api.get(`/orders/${order.secure_token}/invoice`, { responseType: 'blob' });
-                      const url = window.URL.createObjectURL(new Blob([res.data]));
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.setAttribute('download', `invoice-${order.order_number}.pdf`);
-                      document.body.appendChild(link);
-                      link.click();
-                      link.parentNode.removeChild(link);
-                    } catch (e) {
-                      alert('Failed to download invoice. Please try again.');
-                    }
-                  }}
-                  className="w-full px-4 py-3 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg font-bold transition-colors border border-blue-500/30 flex items-center justify-center gap-2"
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  className="w-full text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-transparent hover:border-blue-500/30"
+                  onClick={downloadInvoice}
+                  icon={Download}
                 >
                   Download Invoice (PDF)
-                </button>
+                </Button>
               )}
 
               {isPending && (
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await api.post(`/orders/${order.secure_token}/pay`);
-                      if (window.snap) {
-                        window.snap.pay(res.data.snap_token, {
-                          onSuccess: () => fetchOrder(),
-                          onPending: () => fetchOrder(),
-                          onError: () => { alert('Payment failed.'); fetchOrder(); },
-                          onClose: () => fetchOrder(),
-                        });
-                      } else {
-                        alert('Payment system not ready. Please refresh the page.');
-                      }
-                    } catch (e) {
-                      alert('Failed to initialize payment. Please try again.');
-                    }
-                  }}
-                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
+                <Button 
+                  variant="primary" 
+                  size="xl" 
+                  className="w-full"
+                  onClick={handlePayNow}
+                  loading={paymentLoading}
                 >
-                  Pay Now
-                </button>
+                  Complete Payment Now
+                </Button>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
-      <div className="text-center">
-        <p className="text-sm text-slate-500 mb-6">
-          Save this page URL — it is your receipt and license access portal.
+      <div className="text-center mt-12">
+        <p className="text-sm text-slate-500 mb-6 font-medium">
+          You can always access this page later from your dashboard.
         </p>
-        <Link to="/" className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold transition-colors border border-white/10">
-          <LogOut size={18} /> Return to Store
+        <Link to="/dashboard">
+          <Button variant="ghost" size="md" icon={ArrowLeft}>Return to Dashboard</Button>
         </Link>
       </div>
     </div>
