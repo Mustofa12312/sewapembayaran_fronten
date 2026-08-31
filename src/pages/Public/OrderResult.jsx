@@ -139,6 +139,56 @@ export default function OrderResult() {
                 </button>
               </div>
             )}
+            
+            {/* Action Buttons */}
+            <div className="mt-6 space-y-3">
+              {isPaid && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await api.get(`/orders/${order.secure_token}/invoice`, { responseType: 'blob' });
+                      const url = window.URL.createObjectURL(new Blob([res.data]));
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', `invoice-${order.order_number}.pdf`);
+                      document.body.appendChild(link);
+                      link.click();
+                      link.parentNode.removeChild(link);
+                    } catch (e) {
+                      alert('Failed to download invoice');
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 rounded-lg font-bold transition-colors border border-blue-500/30 flex items-center justify-center gap-2"
+                >
+                  Download Invoice (PDF)
+                </button>
+              )}
+              
+              {!isPaid && order.status === 'PENDING_PAYMENT' && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await api.post(`/orders/${order.secure_token}/pay`);
+                      if (window.snap) {
+                        window.snap.pay(res.data.snap_token, {
+                          onSuccess: function(result){ fetchOrder(); },
+                          onPending: function(result){ fetchOrder(); },
+                          onError: function(result){ alert('Payment failed'); fetchOrder(); },
+                          onClose: function(){ fetchOrder(); }
+                        });
+                      } else {
+                        alert('Snap script not loaded');
+                      }
+                    } catch (e) {
+                      alert('Failed to initialize payment');
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-colors shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
+                >
+                  Pay Again
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

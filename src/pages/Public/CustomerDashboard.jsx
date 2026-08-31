@@ -141,7 +141,10 @@ export default function CustomerDashboard() {
                     <td className="py-4 px-6 font-medium text-white">{order.product?.name || order.package?.name || 'Unknown'}</td>
                     <td className="py-4 px-6 text-slate-400">{new Date(order.created_at).toLocaleDateString()}</td>
                     <td className="py-4 px-6">
-                      <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border
+                        ${order.status === 'PAID' || order.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          (order.status === 'REFUNDED' || order.status === 'EXPIRED' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20')}
+                      `}>
                         {order.status}
                       </span>
                     </td>
