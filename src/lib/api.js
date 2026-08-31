@@ -1,24 +1,27 @@
 import axios from 'axios';
+import useAuthStore from '../stores/authStore';
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  console.error('[Config Error] VITE_API_URL is not defined. Check your .env file.');
+}
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: API_URL || 'http://localhost:8000/api',
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+    'Accept': 'application/json',
+  },
 });
 
-// Add a request interceptor to attach token dynamically
+// Attach token from auth store
 api.interceptors.request.use(
   (config) => {
-    // Determine which token to use based on URL path
-    let token;
-    if (config.url.startsWith('/admin')) {
-      token = localStorage.getItem('admin_token');
-    } else {
-      token = localStorage.getItem('customer_token');
-    }
-
+    const { adminToken, customerToken } = useAuthStore.getState();
+    const isAdminRequest = config.url?.startsWith('/admin');
+    const token = isAdminRequest ? adminToken : customerToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,24 +30,37 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add a response interceptor to handle 401s globally
+// Response interceptor — handle 401 and 403
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear tokens
-      if (error.config.url.startsWith('/admin')) {
-        localStorage.removeItem('admin_token');
+    const { status, config } = error.response ?? {};
+    const isAdminRequest = config?.url?.startsWith('/admin');
+
+    if (status === 401) {
+      if (isAdminRequest) {
+        useAuthStore.getState().clearAdminAuth();
         if (window.location.pathname !== '/admin/login') {
           window.location.href = '/admin/login';
         }
       } else {
-        localStorage.removeItem('customer_token');
+        useAuthStore.getState().clearCustomerAuth();
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
       }
     }
+
+    if (status === 403) {
+      // Don't log out — user is authenticated but lacks permission
+      console.warn('[API] 403 Forbidden:', config?.url);
+      // Optionally dispatch a UI notification here
+    }
+
+    if (status === 0 || !error.response) {
+      console.error('[API] Network error or timeout. Please check your connection.');
+    }
+
     return Promise.reject(error);
   }
 );
