@@ -1,22 +1,28 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import api from '../../lib/api';
+import useAuthStore from '../../stores/authStore';
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const setAdminAuth = useAuthStore((s) => s.setAdminAuth);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       const response = await api.post('/admin/login', { email, password });
-      localStorage.setItem('admin_token', response.data.token);
+      setAdminAuth(response.data.token, response.data.user ?? null);
       navigate('/admin/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.message || 'Login failed. Check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,8 +52,8 @@ export default function Login() {
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full bg-slate-900/50 border border-white/10 text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all" placeholder="••••••••" />
           </div>
 
-          <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white py-3.5 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] mt-6 text-sm tracking-wide">
-            Sign In to Dashboard
+          <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 text-white py-3.5 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] mt-6 text-sm tracking-wide">
+            {loading ? 'Signing In...' : 'Sign In to Dashboard'}
           </button>
         </form>
       </div>

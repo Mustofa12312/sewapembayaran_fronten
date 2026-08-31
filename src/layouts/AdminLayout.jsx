@@ -1,14 +1,17 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { LogOut, LayoutDashboard, Package, Box, Key, ShoppingCart, Users, Activity, UsersRound } from "lucide-react";
+import useAuthStore from "../stores/authStore";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const clearAdminAuth = useAuthStore((s) => s.clearAdminAuth);
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_token');
+    clearAdminAuth();
     navigate('/admin/login');
   };
+
 
   const isActive = (path) => location.pathname === path;
 
